@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#00a859">
-
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saisie Facture SODECI</title>
@@ -18,9 +13,9 @@
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: flex; flex-direction: column; font-size: 0.8em; font-weight: bold; }
         input { padding: 6px; margin-top: 3px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
-        .btn-group { display: flex; gap: 5px; margin-top: 15px; }
+        .btn-group { display: flex; gap: 5px; margin-top: 15px; align-items: center; }
         button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; background-color: #00a859; font-size: 0.8em; }
-        .btn-danger { background-color: #d9534f; }
+        .btn-danger { background-color: #d9534f; width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 50%; padding: 0; margin-left: auto; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 0.75em; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
         th { background-color: #f8f8f8; }
@@ -68,7 +63,7 @@
         <div class="btn-group">
             <button type="button" onclick="sauvegarder()">Ajouter ce client</button>
             <button type="button" onclick="window.location.href='accueil.html'">Voir les factures</button>
-            <button type="button" class="btn-danger" onclick="effacerTout()">Effacer tout</button>
+            <button type="button" class="btn-danger" onclick="effacerTout()"></button>
         </div>
     </form>
 
@@ -164,19 +159,7 @@
 
     // Chargement automatique au démarrage
     window.onload = afficherListe;
-
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('Service Worker enregistré avec succès !', reg.scope))
-                .catch(err => console.log('Échec de l enregistrement du Service Worker :', err));
-        });
-    }
-
-
 </script>
 
 </body>
 </html>
-
