@@ -87,14 +87,14 @@
     async function afficherListe() {
         const tbody = document.getElementById('tbodyClients');
         const totalSpan = document.getElementById('totalGlobal');
-        
+
         try {
             const response = await fetch('/api/factures');
             const liste = await response.json();
-            
+
             tbody.innerHTML = "";
             let sommeTotale = 0;
-            
+
             // L'index + 1 sert ici d'incrémentation visuelle (numérotation)
             liste.forEach((client, index) => {
                 let row = `<tr>
@@ -105,14 +105,14 @@
                     <td><a href="modif.html?id=${client.id}">Modifier</a></td>
                 </tr>`;
                 tbody.innerHTML += row;
-                
+
                 let cubage = (parseFloat(client.nouveau) || 0) - (parseFloat(client.ancien) || 0);
                 sommeTotale += cubage * (parseFloat(client.prix) || 0);
             });
-            
+
             totalSpan.innerText = "Total : " + sommeTotale.toLocaleString() + " FCFA";
-        } catch (err) { 
-            console.error("Erreur chargement :", err); 
+        } catch (err) {
+            console.error("Erreur chargement :", err);
         }
     }
 
