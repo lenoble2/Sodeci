@@ -1,2 +1,13 @@
-printf '{\n  "name": "sodeci",\n  "version": "1.0.0",\n  "main": "server.js",\n  "scripts": {\n    "start": "node server.js"\n  },\n  "dependencies": {\n    "express": "^4.19.2",\n    "mysql2": "^3.9.2"\n  }\n}' > package.json
+{
+  "name": "sodeci",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.9.2"
+  }
+}
 
