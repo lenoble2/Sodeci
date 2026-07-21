@@ -15,6 +15,7 @@
         input { padding: 6px; margin-top: 3px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
         .btn-group { display: flex; gap: 5px; margin-top: 15px; align-items: center; }
         button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; background-color: #00a859; font-size: 0.8em; }
+        .btn-secondary { background-color: #6c757d !important; }
         .btn-danger { background-color: #d9534f !important; width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; border-radius: 50% !important; padding: 0 !important; margin-left: auto !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 0.75em; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
@@ -22,10 +23,8 @@
         #totalGlobal { color: #d9534f; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
-<body>
-
+<body>                                                
     <h2>Saisie des Informations Facturation SODECI</h2>
-
     <form id="factureForm">
         <div class="section">
             <h3>Informations Client</h3>
@@ -35,8 +34,7 @@
                 <label>Adresse: <input type="text" id="adresse_client" name="adresse_client"></label>
                 <label>N° du compte: <input type="text" id="n_compte" name="n_compte"></label>
             </div>
-        </div>
-
+        </div>                                        
         <div class="section section-separator">
             <h3>Références</h3>
             <div class="grid">
@@ -58,15 +56,13 @@
                 <label>Nouveau index: <input type="number" id="nouveau" name="nouveau"></label>
                 <label>Prix m3: <input type="number" id="prix" name="prix"></label>
             </div>
-        </div>
-
+        </div>                                        
         <div class="btn-group">
             <button type="button" onclick="sauvegarder()">Ajouter ce client</button>
-            <button type="button" onclick="window.location.href='accueil.html'">Voir les factures</button>
+            <button type="button" class="btn-secondary" onclick="window.location.href='accueil.html'">Voir les factures</button>
             <button type="button" class="btn-danger" onclick="effacerTout()"></button>
         </div>
-    </form>
-
+    </form>                                           
     <div class="section">
         <h3>Liste des clients enregistrés <span id="totalGlobal"></span></h3>
         <table id="listeClients">
@@ -95,7 +91,6 @@
             tbody.innerHTML = "";
             let sommeTotale = 0;
 
-            // L'index + 1 sert ici d'incrémentation visuelle (numérotation)
             liste.forEach((client, index) => {
                 let row = `<tr>
                     <td>${index + 1}</td>
@@ -157,9 +152,9 @@
         }
     }
 
-    // Chargement automatique au démarrage
     window.onload = afficherListe;
 </script>
 
 </body>
 </html>
+

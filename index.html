@@ -83,8 +83,9 @@
         function verifierMotDePasse() {
             const mdp = document.getElementById('password').value;
             if (mdp === "Admin123") {
-                window.location.href = "rens.html";
-            } else {
+
+		window.location.href = "saisie.html";
+              } else {
                 alert("Mot de passe incorrect !");
             }
         }
