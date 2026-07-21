@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - SODECI</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            background-color: #f8f9fa; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .login-container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            width: 300px; 
+            text-align: center; 
+        }
+        img { width: 100%; border-radius: 4px; }
+        
+        /* Style MOHOUA */
+        .titre-centre { color: #00a859; font-weight: bold; margin: 10px 0; font-size: 1.1em; }
+        
+        h2 { color: #00a859; font-size: 1.2em; margin-bottom: 15px; }
+        
+        .input-group { position: relative; display: flex; align-items: center; }
+        input { 
+            width: 100%; padding: 10px; margin: 10px 0; 
+            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; 
+        }
+        
+        /* Bouton voir mot de passe */
+        .btn-toggle { 
+            position: absolute; right: 10px; cursor: pointer; 
+            font-size: 0.8em; color: #555; background: none; border: none; 
+        }
+        
+        button.login-btn { 
+            width: 100%; padding: 10px; background-color: #00a859; 
+            color: white; border: none; border-radius: 4px; cursor: pointer; 
+        }
+        button:hover { background-color: #008f4c; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <img src="s2.jpg" alt="Logo SODECI">
+        
+        <!-- Titre ajouté ici -->
+        <div class="titre-centre">MOHOUA</div>
+        
+        <h2>Connexion</h2>
+        
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Mot de passe">
+            <button class="btn-toggle" onclick="togglePassword()">Voir</button>
+        </div>
+        
+        <button class="login-btn" onclick="verifierMotDePasse()">Se connecter</button>
+    </div>
+
+    <script>
+        // Fonction pour afficher/masquer le mot de passe
+        function togglePassword() {
+            const passwordField = document.getElementById('password');
+            const toggleBtn = document.querySelector('.btn-toggle');
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                toggleBtn.textContent = "Cacher";
+            } else {
+                passwordField.type = "password";
+                toggleBtn.textContent = "Voir";
+            }
+        }
+
+        function verifierMotDePasse() {
+            const mdp = document.getElementById('password').value;
+            if (mdp === "Admin123") {
+                window.location.href = "rens.html";
+            } else {
+                alert("Mot de passe incorrect !");
+            }
+        }
+    </script>
+</body>
+</html>

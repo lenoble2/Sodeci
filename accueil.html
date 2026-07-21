@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Factures SODECI - Impression Complète</title>
+    <!-- Chargement d'une police de code-barres -->
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Extended&display=swap" rel="stylesheet">
+    <style>
+        /* Configuration A4 */
+        @page { size: A4; margin: 5mm; }
+        body { margin: 0; padding: 0; background: #eee; font-family: Arial, sans-serif; }
+
+        .page-a4 {
+            width: 210mm; height: 297mm; padding: 10mm; margin: 10px auto;
+            background-color: white; border: 1px solid #ccc; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        .facture {
+            width: 100%; height: 47%; position: relative; border: 1px solid #eee;
+            background-image: url('s1.jpg'); background-repeat: no-repeat;
+            background-position: center; background-size: contain; background-blend-mode: lighten;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 15px; box-sizing: border-box;
+        }
+
+        /* En-tête avec logo à gauche */
+        .header-container { position: relative; width: 100%; border-bottom: 2px solid #00a859; padding-bottom: 8px; margin-bottom: 12px; }
+        #logoEntreprise { width: 90px; position: absolute; top: 0; left: 0; }
+        .header-info { text-align: center; font-size: 10px; line-height: 1.4; padding-left: 100px; }
+        h1 { color: #00a859; text-align: center; font-size: 18px; margin: 5px 0 10px 0; }
+
+        .top-container { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-end; }
+        .facturation-info { font-size: 10px; margin-bottom: 10px; padding: 5px; border-top: 1px solid #eee; }
+        .date-limite { font-weight: bold; border: 1px solid #00a859; display: inline-block; padding: 3px 8px; font-size: 10px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th { background: #00a859; color: white; font-size: 9px; padding: 6px; border: 1px solid #00a859; }
+        td { border: 1px solid #00a859; padding: 6px; text-align: center; font-size: 10px; }
+        td input { width: 95%; border: none; text-align: center; font-size: 10px; background: transparent; }
+
+        /* Style pour le total avec frais */
+        .total_avec_frais { color: #00a859; font-weight: bold; font-size: 14px; }
+
+        .ref-table { width: 65%; }
+        .client-box { width: 30%; font-size: 9px; }
+        .client-box input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; margin-top: 2px; }
+
+        /* Zone code-barres et lettres modifiée */
+        .montant_lettres {
+            border: 1px solid #00a859; padding: 8px; background: #f9f9f9;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .barcode { font-family: 'Libre Barcode 39 Extended', cursive; font-size: 35px; }
+        .texte-montant { font-weight: bold; font-size: 10px; text-align: right; }
+
+        .zone-bouton { margin: 20px; text-align: center; }
+
+        @media print { body { background: none; } .page-a4 { margin: 0; border: none; page-break-after: always; } .no-print { display: none; } }
+        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    </style>
+</head>
+<body>
+
+<div id="conteneur-pages"></div>
+
+<div class="zone-bouton no-print">
+    <button onclick="window.print()" style="padding: 12px 25px; background: #00a859; color: white; border: none; cursor: pointer; font-size: 14px;">Imprimer</button>
+</div>
+
+<script>
+    function nombreEnLettres(nombre) {
+        const unite = ["", "Un", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf"];
+        const dizaine = ["", "Dix", "Vingt", "Trente", "Quarante", "Cinquante", "Soixante", "Soixante-dix", "Quatre-vingt", "Quatre-vingt-dix"];
+        if (nombre < 10) return unite[nombre];
+        if (nombre < 20) return ["Dix", "Onze", "Douze", "Treize", "Quatorze", "Quinze", "Seize", "Dix-sept", "Dix-huit", "Dix-neuf"][nombre - 10];
+        if (nombre < 100) return dizaine[Math.floor(nombre / 10)] + (nombre % 10 !== 0 ? "-" + unite[nombre % 10] : "");
+        if (nombre < 1000) return unite[Math.floor(nombre / 100)] + " Cent " + (nombre % 100 !== 0 ? nombreEnLettres(nombre % 100) : "");
+        if (nombre < 1000000) return nombreEnLettres(Math.floor(nombre / 1000)) + " Mille " + (nombre % 1000 !== 0 ? nombreEnLettres(nombre % 1000) : "");
+        return nombre;
+    }
+
+    function calculer(factureDiv) {
+        const anc = parseFloat(factureDiv.querySelector('.ancien').value) || 0;
+        const nou = parseFloat(factureDiv.querySelector('.nouveau').value) || 0;
+        const prixUnitaire = parseFloat(factureDiv.querySelector('.prix_unitaire').value) || 0;
+        
+        const cubage = Math.max(0, nou - anc);
+        const net = cubage * prixUnitaire;
+        const totalFrais = net + 100;
+
+        factureDiv.querySelector('.cubage').value = cubage;
+        factureDiv.querySelector('.final-total').value = net + " FCFA";
+        factureDiv.querySelector('.total_facture').innerText = net + " FCFA";
+        factureDiv.querySelector('.total_avec_frais').innerText = totalFrais + " FCFA";
+
+        // Mise à jour code-barres et texte
+        factureDiv.querySelector('.barcode').innerText = "*" + totalFrais + "*";
+        factureDiv.querySelector('.texte-montant').innerText = nombreEnLettres(totalFrais).toUpperCase() + " FRANCS CFA";
+    }
+
+    window.onload = async function() {
+        try {
+            const response = await fetch('/api/factures');
+            const listeClients = await response.json();
+            const conteneur = document.getElementById('conteneur-pages');
+
+            for (let i = 0; i < listeClients.length; i += 2) {
+                const page = document.createElement('div');
+                page.className = 'page-a4';
+
+                [i, i + 1].forEach(index => {
+                    if (index < listeClients.length) {
+                        const data = listeClients[index];
+                        const div = document.createElement('div');
+                        div.className = 'facture';
+                        div.innerHTML = `
+                            <div class="contenu-principal">
+                                <div class="header-container">
+                                    <img src="s2.jpg" id="logoEntreprise">
+                                    <div class="header-info">
+                                        <strong>SOCIETE DE DISTRIBUTION D'EAU DE LA COTE D'IVOIRE</strong><br>
+                                        Société Anonyme au capital de 4.500.000.000 de Francs C.F.A - R.C.C.M d'Abidjan-Plateau, n° CI-ABJ-1962-B 984<br>
+                                        SIEGE SOCIAL : TREICHVILLE - Av. Christiani - Tel : 27.21.23.30.00, 01 B.P. 1843 ABIDJAN 01<br>
+                                        COMPTE CONTRIBUABLE N° 01.00.984 A, Compte SGBCI CI008 01111 0111.301.148.71 65<br>
+                                        CENTRE DES IMPÔTS : DGI/DGE-REGIME D'IMPOSITION : REEL NORMAL - www.sodeci.ci
+                                    </div>
+                                </div>
+                                <h1>FACTURE</h1>
+                                <div class="top-container">
+                                    <table class="ref-table">
+                                        <tr><th>Centre</th><th>Police</th><th>Ordre</th><th>Clé</th><th>Secteur</th></tr>
+                                        <tr>
+                                            <td><input type="text" value="${data.centre || ''}"></td>
+                                            <td><input type="text" value="${data.police || ''}"></td>
+                                            <td><input type="text" value="${data.ordre || ''}"></td>
+                                            <td><input type="text" value="${data.cle || ''}"></td>
+                                            <td><input type="text" value="${data.code || ''}"></td>
+                                        </tr>
+                                    </table>
+                                    <div class="client-box">
+                                        <strong>CLIENT:</strong><input type="text" value="${data.nom_client || ''}">
+                                        <strong>TEL:</strong><input type="text" value="${data.tel_client || ''}">
+                                    </div>
+                                </div>
+                                <div class="facturation-info">Période : ${data.periode || ''} | <span class="date-limite">Date limite : ${data.date_limite || ''}</span></div>
+                                <table>
+                                    <tr><th>Diam</th><th>N° compt</th><th>Ancien</th><th>Nouvel</th><th>Cubage</th><th>Net</th></tr>
+                                    <tr>
+                                        <td><input type="text" value="01"></td>
+                                        <td><input type="text" value="${data.n_compte || ''}"></td>
+                                        <td><input type="number" class="ancien" value="${data.ancien || 0}" oninput="calculer(this.closest('.facture'))"></td>
+                                        <td><input type="number" class="nouveau" value="${data.nouveau || 0}" oninput="calculer(this.closest('.facture'))"></td>
+                                        <td><input type="number" class="cubage" readonly></td>
+                                        <td style="display:none;"><input type="number" class="prix_unitaire" value="${data.prix || 0}"></td>
+                                        <td><input type="text" class="final-total" readonly></td>
+                                    </tr>
+                                    <tr><td colspan="5" style="text-align:right; font-weight:bold;">Total</td><td class="total_facture">0 FCFA</td></tr>
+                                    <tr><td colspan="5" style="text-align:right; font-weight:bold;">Total avec frais</td><td class="total_avec_frais">0 FCFA</td></tr>
+                                </table>
+                                <div class="montant_lettres">
+                                    <span class="barcode"></span>
+                                    <span class="texte-montant"></span>
+                                </div>
+                            </div>
+                        `;
+                        page.appendChild(div);
+                        setTimeout(() => calculer(div), 100);
+                    }
+                });
+                conteneur.appendChild(page);
+            }
+        } catch (err) {
+            console.error("Erreur chargement:", err);
+            alert("Erreur lors du chargement des données depuis la base.");
+        }
+    };
+</script>
+</body>
+</html>

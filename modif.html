@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modification Client</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f8f9fa; padding: 10px; color: #333; }
+        h2 { color: #00a859; border-bottom: 2px solid #00a859; padding-bottom: 5px; font-size: 1.3em; }
+        .section { margin-bottom: 15px; padding-top: 10px; }
+        .section-separator { border-top: 2px solid #00a859; }
+        h3 { font-size: 1em; margin-bottom: 8px; color: #444; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { display: flex; flex-direction: column; font-size: 0.8em; font-weight: bold; }
+        input { padding: 6px; margin-top: 3px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 5px; margin-top: 15px; }
+        button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; background-color: #00a859; font-size: 0.8em; }
+        .btn-danger { background-color: #d9534f; }
+
+        #historiqueSection { display: none; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: 0.75em; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f8f8f8; }
+        #totalSomme { color: #d9534f; font-weight: bold; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Modification Client</h2>
+
+    <form id="modifForm">
+        <div class="section">
+            <h3>Modifier Informations Client</h3>
+            <div class="grid">
+                <label>Nom et Prénoms: <input type="text" id="nom_client"></label>
+                <label>Téléphone: <input type="text" id="tel_client"></label>
+                <label>Adresse / Lot: <input type="text" id="adresse_client"></label>
+                <label>N° du compte: <input type="text" id="n_compte"></label>
+            </div>
+        </div>
+
+        <div class="section section-separator">
+            <h3>Références</h3>
+            <div class="grid">
+                <label>Centre: <input type="text" id="centre"></label>
+                <label>Police: <input type="text" id="police"></label>
+                <label>Ordre: <input type="text" id="ordre"></label>
+                <label>Clé: <input type="text" id="cle"></label>
+                <label>Code secteur: <input type="text" id="code_secteur"></label>
+                <label>Code Regroupement: <input type="text" id="code_regroupement"></label>
+            </div>
+        </div>
+
+        <div class="section section-separator">
+            <h3>Consommation</h3>
+            <div class="grid">
+                <label>Période: <input type="text" id="periode"></label>
+                <label>Date limite: <input type="text" id="date_limite"></label>
+                <label>Ancien index: <input type="number" id="ancien"></label>
+                <label>Nouveau index: <input type="number" id="nouveau"></label>
+                <label>Prix m3: <input type="number" id="prix"></label>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" onclick="enregistrerModif()">Enregistrer</button>
+            <button type="button" onclick="toggleHistorique()">Voir Historique</button>
+            <button type="button" class="btn-danger" onclick="effacerHistorique()">Effacer Historique</button>
+            <button type="button" onclick="window.location.href='rens.html'">Annuler</button>
+        </div>
+    </form>
+
+    <div id="historiqueSection" class="section section-separator">
+        <h3>Historique des Saisies <span id="totalSomme"></span></h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ancien</th>
+                    <th>Nouveau</th>
+                    <th>Cubage</th>
+                    <th>Prix</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyHistorique"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientId = urlParams.get('id');
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!clientId) return;
+
+            try {
+                const response = await fetch(`/api/factures/${clientId}`);
+                if (response.status === 404) {
+                    alert("Client introuvable. La base de données a peut-être été réinitialisée.");
+                    return;
+                }
+                if (!response.ok) throw new Error("Erreur serveur");
+
+                const client = await response.json();
+
+                document.getElementById('nom_client').value = client.nom_client || '';
+                document.getElementById('tel_client').value = client.tel_client || '';
+                document.getElementById('adresse_client').value = client.adresse_client || '';
+                document.getElementById('n_compte').value = client.n_compte || '';
+                document.getElementById('centre').value = client.centre || '';
+                document.getElementById('police').value = client.police || '';
+                document.getElementById('ordre').value = client.ordre || '';
+                document.getElementById('cle').value = client.cle || '';
+                document.getElementById('code_secteur').value = client.code || '';
+                document.getElementById('code_regroupement').value = client.code_regroupement || '';
+                document.getElementById('periode').value = client.periode || '';
+                document.getElementById('date_limite').value = client.date_limite || '';
+                document.getElementById('ancien').value = client.ancien || 0;
+                document.getElementById('nouveau').value = client.nouveau || 0;
+                document.getElementById('prix').value = client.prix || 0;
+            } catch (err) {
+                console.error(err);
+                alert("Erreur de connexion avec le serveur.");
+            }
+        });
+
+        function toggleHistorique() {
+            const section = document.getElementById('historiqueSection');
+            section.style.display = (section.style.display === "block") ? "none" : "block";
+            if (section.style.display === "block") chargerHistorique();
+        }
+
+        async function chargerHistorique() {
+            try {
+                const response = await fetch(`/api/factures/${clientId}/historique`);
+                const data = await response.json();
+                const tbody = document.getElementById('tbodyHistorique');
+                const totalSpan = document.getElementById('totalSomme');
+                tbody.innerHTML = "";
+
+                let grandTotal = 0;
+                data.forEach(h => {
+                    let cubage = (h.nouveau || 0) - (h.ancien || 0);
+                    let totalPrix = (h.prix || 0) * cubage;
+                    grandTotal += totalPrix;
+
+                    tbody.innerHTML += `<tr>
+                        <td>${h.ancien}</td>
+                        <td>${h.nouveau}</td>
+                        <td>${cubage}</td>
+                        <td>${totalPrix.toLocaleString()}</td>
+                        <td>${new Date(h.date_saisie).toLocaleDateString()}</td>
+                    </tr>`;
+                });
+                totalSpan.innerText = "Total : " + grandTotal.toLocaleString() + " FCFA";
+            } catch (err) { console.error("Erreur historique", err); }
+        }
+
+        async function effacerHistorique() {
+            if(confirm("Voulez-vous vraiment effacer tout l'historique de ce client ?")) {
+                try {
+                    const response = await fetch(`/api/factures/${clientId}/historique`, { 
+                        method: 'DELETE' 
+                    });
+                    if (response.ok) {
+                        alert("Historique supprimé !");
+                        chargerHistorique(); 
+                    } else {
+                        alert("Erreur lors de la suppression.");
+                    }
+                } catch (err) { console.error("Erreur :", err); }
+            }
+        }
+
+        async function enregistrerModif() {
+            const donnees = {
+                nom_client: document.getElementById('nom_client').value,
+                tel_client: document.getElementById('tel_client').value,
+                adresse_client: document.getElementById('adresse_client').value,
+                n_compte: document.getElementById('n_compte').value,
+                centre: document.getElementById('centre').value,
+                police: document.getElementById('police').value,
+                ordre: document.getElementById('ordre').value,
+                cle: document.getElementById('cle').value,
+                code: document.getElementById('code_secteur').value,
+                code_regroupement: document.getElementById('code_regroupement').value,
+                periode: document.getElementById('periode').value,
+                date_limite: document.getElementById('date_limite').value,
+                ancien: document.getElementById('ancien').value,
+                nouveau: document.getElementById('nouveau').value,
+                prix: document.getElementById('prix').value
+            };
+
+            try {
+                const response = await fetch(`/api/factures/${clientId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(donnees)
+                });
+                if (response.ok) {
+                    alert("Modifications enregistrées !");
+                    window.location.href = 'rens.html';
+                } else { alert("Erreur lors de la mise à jour."); }
+            } catch (err) { console.error(err); }
+        }
+    </script>
+</body>
+</html>

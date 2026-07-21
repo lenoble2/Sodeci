@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Générateur d'icône PWA</title>
+</head>
+<body style="text-align:center; padding:20px; font-family:sans-serif;">
+    <h3>Génération de l'icône PWA</h3>
+    <canvas id="canvas" width="512" height="512" style="border:1px solid #ccc; max-width:100%; height:auto;"></canvas>
+    <br><br>
+    <a id="downloadBtn" download="icon.png" style="padding:12px 20px; background:#00a859; color:white; text-decoration:none; border-radius:4px; font-weight:bold; display:inline-block;">Télécharger l'icône (icon.png)</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.crossOrigin = "anonymous";
+        // Utilisation du nom exact de votre image
+        img.src = "s2.jpg";
+        
+        img.onload = function() {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const targetSize = 512;
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+            
+            let drawWidth = targetSize;
+            let drawHeight = (imgHeight / imgWidth) * targetSize;
+            
+            if (drawHeight > targetSize) {
+                drawHeight = targetSize;
+                drawWidth = (imgWidth / imgHeight) * targetSize;
+            }
+            
+            const x = (targetSize - drawWidth) / 2;
+            const y = (targetSize - drawHeight) / 2;
+            
+            ctx.drawImage(img, x, y, drawWidth, drawHeight);
+            
+            const btn = document.getElementById('downloadBtn');
+            btn.href = canvas.toDataURL('image/png');
+        };
+
+        img.onerror = function() {
+            alert("Erreur : Le fichier 's2.jpg' est introuvable. Assurez-vous qu'il est bien dans le même dossier que ce fichier HTML.");
+        };
+    </script>
+</body>
+</html>
