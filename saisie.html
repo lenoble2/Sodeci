@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saisie Facture SODECI</title>
+    <title>Saisie Facture Hva Mohoua</title>
     <style>
         body { font-family: sans-serif; background-color: #f8f9fa; padding: 10px; color: #333; }
         h2 { color: #00a859; border-bottom: 2px solid #00a859; padding-bottom: 5px; font-size: 1.3em; }
@@ -26,10 +26,26 @@
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#00a859">
 
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed') {
+                        if (navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    }
+                };
+            };
+        });
+    }
+</script>
 
 </head>
-<body>                                                
-	<h2>Saisie des Informations Facturation </h2>
+<body>
+        <h2>Saisie des Informations Facturation Hva Mohoua</h2>
     <form id="factureForm">
         <div class="section">
             <h3>Informations Client</h3>
@@ -39,7 +55,7 @@
                 <label>Adresse: <input type="text" id="adresse_client" name="adresse_client"></label>
                 <label>N° du compte: <input type="text" id="n_compte" name="n_compte"></label>
             </div>
-        </div>                                        
+        </div>
         <div class="section section-separator">
             <h3>Références</h3>
             <div class="grid">
@@ -61,13 +77,13 @@
                 <label>Nouveau index: <input type="number" id="nouveau" name="nouveau"></label>
                 <label>Prix m3: <input type="number" id="prix" name="prix"></label>
             </div>
-        </div>                                        
+        </div>
         <div class="btn-group">
             <button type="button" onclick="sauvegarder()">Ajouter ce client</button>
             <button type="button" class="btn-secondary" onclick="window.location.href='accueil.html'">Voir les factures</button>
             <button type="button" class="btn-danger" onclick="effacerTout()"></button>
         </div>
-    </form>                                           
+    </form>
     <div class="section">
         <h3>Liste des clients enregistrés <span id="totalGlobal"></span></h3>
         <table id="listeClients">
@@ -162,4 +178,3 @@
 
 </body>
 </html>
-
