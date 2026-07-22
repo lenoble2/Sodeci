@@ -6,7 +6,7 @@
 </head>
 <body style="text-align:center; padding:20px; font-family:sans-serif;">
     <h3>Génération de l'icône PWA (512x512)</h3>
-    <canvas id="canvas" width="512" height="512" style="border:1px solid #ccc; max-width:100%; height:auto;"></canvas>
+    <canvas id="canvas" width="512" height="512" style="border:1px solid #ccc;"></canvas>
     <br><br>
     <a id="downloadBtn" download="icon.png" style="padding:12px 20px; background:#00a859; color:white; text-decoration:none; border-radius:5px;">Télécharger l'icône</a>
 
@@ -16,7 +16,7 @@
         const img = new Image();
 
         img.crossOrigin = "anonymous";
-        img.src = "s2.jpg";
+        img.src = "images/icon.png"; 
 
         img.onload = function() {
             ctx.fillStyle = "#FFFFFF";
@@ -44,7 +44,7 @@
         };
 
         img.onerror = function() {
-            alert("Erreur : Le fichier 's2.jpg' est introuvable. Assurez-vous qu'il est bien dans le même dossier.");
+            alert("Erreur : Le fichier 'icon.png' est introuvable dans le dossier images/.");
         };
     </script>
 </body>

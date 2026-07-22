@@ -1,6 +1,7 @@
-const CACHE_NAME = 'sodeci-mohoua-v1';
+const CACHE_NAME = 'hva-mohoua-v1';
 const urlsToCache = [
-    '/rens.html',
+    '/',
+    '/index.html',
     '/images/icon.png'
 ];
 
@@ -23,4 +24,3 @@ self.addEventListener('fetch', event => {
             })
     );
 });
-
