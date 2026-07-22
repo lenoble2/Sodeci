@@ -1,11 +1,11 @@
-const CACHE_NAME = 'hva-mohoua-v2';
+const CACHE_NAME = 'hva-mohoua-v4';
 const urlsToCache = [
     '/',
+    '/index.html',
     '/saisie.html',
     '/images/icon.png'
 ];
 
-// Installation du Service Worker et mise en cache des fichiers essentiels
 self.addEventListener('install', event => {
     self.skipWaiting();
     event.waitUntil(
@@ -16,7 +16,6 @@ self.addEventListener('install', event => {
     );
 });
 
-// Activation et nettoyage des anciens caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -31,7 +30,6 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Interception des requêtes réseau pour servir le cache si besoin
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
