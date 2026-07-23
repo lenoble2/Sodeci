@@ -9,13 +9,11 @@
         /* Configuration A4 */
         @page { size: A4; margin: 5mm; }
         body { margin: 0; padding: 0; background: #eee; font-family: Arial, sans-serif; }
-
         .page-a4 {
             width: 210mm; height: 297mm; padding: 10mm; margin: 10px auto;
             background-color: white; border: 1px solid #ccc; box-sizing: border-box;
             display: flex; flex-direction: column; justify-content: space-between;
         }
-
         .facture {
             width: 100%; height: 47%; position: relative; border: 1px solid #eee;
             background-image: url('s1.jpg'); background-repeat: no-repeat;
@@ -32,20 +30,17 @@
 
         .top-container { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-end; }
         .facturation-info { font-size: 10px; margin-bottom: 10px; padding: 5px; border-top: 1px solid #eee; }
-        .date-limite { font-weight: bold; border: 1px solid #00a859; display: inline-block; padding: 3px 8px; font-size: 10px; }
-
+        .date-limite { font-weight: bold; border: 1px solid #00a859; display: inline-block; padding: 3px 8px; font-size: 10px; }      
         table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         th { background: #00a859; color: white; font-size: 9px; padding: 6px; border: 1px solid #00a859; }
         td { border: 1px solid #00a859; padding: 6px; text-align: center; font-size: 10px; }
         td input { width: 95%; border: none; text-align: center; font-size: 10px; background: transparent; }
-
         /* Style pour le total avec frais */
         .total_avec_frais { color: #00a859; font-weight: bold; font-size: 14px; }
 
         .ref-table { width: 65%; }
         .client-box { width: 30%; font-size: 9px; }
-        .client-box input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; margin-top: 2px; }
-
+        .client-box input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; margin-top: 2px; }     
         /* Zone code-barres et lettres modifiée */
         .montant_lettres {
             border: 1px solid #00a859; padding: 8px; background: #f9f9f9;
@@ -53,9 +48,7 @@
         }
         .barcode { font-family: 'Libre Barcode 39 Extended', cursive; font-size: 35px; }
         .texte-montant { font-weight: bold; font-size: 10px; text-align: right; }
-
         .zone-bouton { margin: 20px; text-align: center; }
-
         @media print { body { background: none; } .page-a4 { margin: 0; border: none; page-break-after: always; } .no-print { display: none; } }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     </style>
@@ -84,31 +77,58 @@
         const anc = parseFloat(factureDiv.querySelector('.ancien').value) || 0;
         const nou = parseFloat(factureDiv.querySelector('.nouveau').value) || 0;
         const prixUnitaire = parseFloat(factureDiv.querySelector('.prix_unitaire').value) || 0;
-        
         const cubage = Math.max(0, nou - anc);
         const net = cubage * prixUnitaire;
         const totalFrais = net + 100;
-
+        
         factureDiv.querySelector('.cubage').value = cubage;
         factureDiv.querySelector('.final-total').value = net + " FCFA";
         factureDiv.querySelector('.total_facture').innerText = net + " FCFA";
         factureDiv.querySelector('.total_avec_frais').innerText = totalFrais + " FCFA";
-
-        // Mise à jour code-barres et texte
+        
         factureDiv.querySelector('.barcode').innerText = "*" + totalFrais + "*";
         factureDiv.querySelector('.texte-montant').innerText = nombreEnLettres(totalFrais).toUpperCase() + " FRANCS CFA";
     }
 
     window.onload = async function() {
         try {
-            const response = await fetch('/api/factures');
-            const listeClients = await response.json();
+            let listeDistante = [];
+            try {
+                const response = await fetch('/api/factures');
+                if (response.ok) {
+                    listeDistante = await response.json();
+                }
+            } catch (err) {
+                console.log("Serveur distant inaccessible.");
+            }
+
+            if (!Array.isArray(listeDistante)) {
+                listeDistante = listeDistante.factures || listeDistante.data || [];
+            }
+
+            let localData = localStorage.getItem('hva_factures');
+            let listeLocale = localData ? JSON.parse(localData) : [];
+
+            let listeClients = [...listeDistante];
+            listeLocale.forEach(clientLocal => {
+                const existe = listeClients.some(c => (c.id == clientLocal.id || c._id == clientLocal.id));
+                if (!existe) {
+                    listeClients.push(clientLocal);
+                }
+            });
+
             const conteneur = document.getElementById('conteneur-pages');
+            conteneur.innerHTML = "";
+
+            if (listeClients.length === 0) {
+                conteneur.innerHTML = `<div style="text-align:center; padding: 50px; font-size: 16px; color: #777;">Aucune facture enregistrée</div>`;
+                return;
+            }
 
             for (let i = 0; i < listeClients.length; i += 2) {
                 const page = document.createElement('div');
                 page.className = 'page-a4';
-
+                
                 [i, i + 1].forEach(index => {
                     if (index < listeClients.length) {
                         const data = listeClients[index];

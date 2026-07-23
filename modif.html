@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -17,7 +19,6 @@
         button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; background-color: #00a859; font-size: 0.8em; }
         .btn-info { background-color: #007bff !important; }
         .btn-danger { background-color: #d9534f !important; width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; border-radius: 50% !important; padding: 0 !important; margin-left: auto !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }
-
         #historiqueSection { display: none; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: 0.75em; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
@@ -28,7 +29,6 @@
 <body>
 
     <h2>Modification Client</h2>
-
     <form id="modifForm">
         <div class="section">
             <h3>Modifier Informations Client</h3>
@@ -39,7 +39,6 @@
                 <label>N° du compte: <input type="text" id="n_compte"></label>
             </div>
         </div>
-
         <div class="section section-separator">
             <h3>Références</h3>
             <div class="grid">
@@ -51,7 +50,6 @@
                 <label>Code Regroupement: <input type="text" id="code_regroupement"></label>
             </div>
         </div>
-
         <div class="section section-separator">
             <h3>Consommation</h3>
             <div class="grid">
@@ -62,11 +60,11 @@
                 <label>Prix m3: <input type="number" id="prix"></label>
             </div>
         </div>
-
         <div class="btn-group">
             <button type="button" onclick="enregistrerModif()">Enregistrer</button>
             <button type="button" class="btn-info" onclick="toggleHistorique()">Voir Historique</button>
-            <button type="button" onclick="window.location.href='rens.html'">Annuler</button>
+            <!-- Redirection vers saisi.html pour le bouton Annuler -->
+            <button type="button" onclick="window.location.href='saisi.html'">Annuler</button>
             <button type="button" class="btn-danger" onclick="effacerHistorique()"></button>
         </div>
     </form>
@@ -93,16 +91,27 @@
 
         document.addEventListener('DOMContentLoaded', async function() {
             if (!clientId) return;
-
             try {
-                const response = await fetch(`/api/factures/${clientId}`);
-                if (response.status === 404) {
+                let client = null;
+                try {
+                    const response = await fetch(`/api/factures/${clientId}`);
+                    if (response.status === 404) {
+                        throw new Error("Client introuvable serveur");
+                    }
+                    if (!response.ok) throw new Error("Erreur serveur");
+                    client = await response.json();
+                } catch (netErr) {
+                    console.log("Lecture du client depuis le stockage local...");
+                    let localData = localStorage.getItem('hva_factures');
+                    if (localData) {
+                        let liste = JSON.parse(localData);
+                        client = liste.find(item => item.id == clientId || item._id == clientId);
+                    }
+                }
+                if (!client) {
                     alert("Client introuvable. La base de données a peut-être été réinitialisée.");
                     return;
                 }
-                if (!response.ok) throw new Error("Erreur serveur");
-
-                const client = await response.json();
 
                 document.getElementById('nom_client').value = client.nom_client || '';
                 document.getElementById('tel_client').value = client.tel_client || '';
@@ -133,24 +142,71 @@
 
         async function chargerHistorique() {
             try {
-                const response = await fetch(`/api/factures/${clientId}/historique`);
-                const data = await response.json();
+                let data = [];
+                let isLocalClient = false;
+
+                // 1. Vérifier d'abord si c'est un client présent dans le localStorage (hors-ligne)
+                let localData = localStorage.getItem('hva_factures');
+                if (localData) {
+                    let liste = JSON.parse(localData);
+                    let clientLocal = liste.find(item => item.id == clientId || item._id == clientId);
+                    if (clientLocal) {
+                        isLocalClient = true;
+                        if (clientLocal.historique && Array.isArray(clientLocal.historique)) {
+                            data = [...clientLocal.historique].reverse();
+                        } else {
+                            data = [{
+                                ancien: clientLocal.ancien || 0,
+                                nouveau: clientLocal.nouveau || 0,
+                                prix: clientLocal.prix || 0,
+                                date_saisie: clientLocal.date_saisie || new Date()
+                            }];
+                        }
+                    }
+                }
+
+                // 2. Si ce n'est pas un client local pur, tenter de charger l'historique depuis le serveur (base de données)
+                if (!isLocalClient || data.length === 0) {
+                    try {
+                        const response = await fetch(`/api/factures/${clientId}/historique`);
+                        if (response.ok) {
+                            const serverData = await response.json();
+                            if (serverData && serverData.length > 0) {
+                                data = serverData;
+                            }
+                        }
+                    } catch(e) {
+                        console.log("Erreur chargement historique serveur, utilisation du fallback.");
+                    }
+                }
+
+                // Récupération des valeurs actuelles affichées dans les champs du formulaire pour exclure la saisie active de l'historique
+                const formAncien = Number(document.getElementById('ancien').value) || 0;
+                const formNouveau = Number(document.getElementById('nouveau').value) || 0;
+
                 const tbody = document.getElementById('tbodyHistorique');
                 const totalSpan = document.getElementById('totalSomme');
                 tbody.innerHTML = "";
-
                 let grandTotal = 0;
-                data.forEach(h => {
-                    let cubage = (h.nouveau || 0) - (h.ancien || 0);
-                    let totalPrix = (h.prix || 0) * cubage;
-                    grandTotal += totalPrix;
+                
+                let lignesAffichees = 0;
+                data.forEach((h, index) => {
+                    // Si la première ligne correspond exactement aux index en cours du formulaire, on l'ignore pour ne garder que les vraies anciennes factures
+                    if (lignesAffichees === 0 && Number(h.ancien) === formAncien && Number(h.nouveau) === formNouveau) {
+                        return; 
+                    }
 
+                    lignesAffichees++;
+                    let cubage = (Number(h.nouveau) || 0) - (Number(h.ancien) || 0);
+                    let totalPrix = (Number(h.prix) || 0) * cubage;
+                    grandTotal += totalPrix;
+                    let dateFormatee = h.date_saisie ? new Date(h.date_saisie).toLocaleDateString() : '-';
                     tbody.innerHTML += `<tr>
                         <td>${h.ancien}</td>
                         <td>${h.nouveau}</td>
                         <td>${cubage}</td>
                         <td>${totalPrix.toLocaleString()}</td>
-                        <td>${new Date(h.date_saisie).toLocaleDateString()}</td>
+                        <td>${dateFormatee}</td>
                     </tr>`;
                 });
                 totalSpan.innerText = "Total : " + grandTotal.toLocaleString() + " FCFA";
@@ -160,15 +216,22 @@
         async function effacerHistorique() {
             if(confirm("Voulez-vous vraiment effacer tout l'historique de ce client ?")) {
                 try {
-                    const response = await fetch(`/api/factures/${clientId}/historique`, {
+                    await fetch(`/api/factures/${clientId}/historique`, {
                         method: 'DELETE'
                     });
-                    if (response.ok) {
-                        alert("Historique supprimé !");
-                        chargerHistorique();
-                    } else {
-                        alert("Erreur lors de la suppression.");
+                    
+                    let localData = localStorage.getItem('hva_factures');
+                    if (localData) {
+                        let liste = JSON.parse(localData);
+                        let idx = liste.findIndex(item => item.id == clientId || item._id == clientId);
+                        if (idx !== -1) {
+                            liste[idx].historique = [];
+                            localStorage.setItem('hva_factures', JSON.stringify(liste));
+                        }
                     }
+
+                    alert("Historique supprimé !");
+                    chargerHistorique();
                 } catch (err) { console.error("Erreur :", err); }
             }
         }
@@ -192,6 +255,26 @@
                 prix: document.getElementById('prix').value
             };
 
+            let enregistre = false;
+
+            let localData = localStorage.getItem('hva_factures');
+            let listeLocal = localData ? JSON.parse(localData) : [];
+            let idxLocal = listeLocal.findIndex(item => item.id == clientId || item._id == clientId);
+
+            if (idxLocal !== -1) {
+                let historiqueClient = listeLocal[idxLocal].historique || [];
+                historiqueClient.push({
+                    ancien: donnees.ancien,
+                    nouveau: donnees.nouveau,
+                    prix: donnees.prix,
+                    date_saisie: new Date()
+                });
+
+                listeLocal[idxLocal] = { ...listeLocal[idxLocal], ...donnees, historique: historiqueClient, id: clientId };
+                localStorage.setItem('hva_factures', JSON.stringify(listeLocal));
+                enregistre = true;
+            }
+
             try {
                 const response = await fetch(`/api/factures/${clientId}`, {
                     method: 'PUT',
@@ -199,10 +282,28 @@
                     body: JSON.stringify(donnees)
                 });
                 if (response.ok) {
-                    alert("Modifications enregistrées !");
-                    window.location.href = 'rens.html';
-                } else { alert("Erreur lors de la mise à jour."); }
-            } catch (err) { console.error(err); }
+                    enregistre = true;
+                }
+            } catch(netErr) {
+                console.log("Serveur injoignable, traitement local uniquement.");
+            }
+
+            if (!enregistre) {
+                listeLocal.push({ 
+                    id: clientId, 
+                    ...donnees, 
+                    historique: [{ ancien: donnees.ancien, nouveau: donnees.nouveau, prix: donnees.prix, date_saisie: new Date() }] 
+                });
+                localStorage.setItem('hva_factures', JSON.stringify(listeLocal));
+                enregistre = true;
+            }
+
+            if (enregistre) {
+                alert("Modifications enregistrées !");
+                window.location.href = 'saisi.html';
+            } else {
+                alert("Erreur lors de la mise à jour.");
+            }
         }
     </script>
 </body>

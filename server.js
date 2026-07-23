@@ -98,6 +98,12 @@ handleDisconnect();
 
 // --- ROUTES ---
 
+
+app.get('/modif.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'modif.html'));
+});
+
+
 // 1. Routes globales
 app.get('/api/factures', (req, res) => {
     db.query('SELECT * FROM factures', (err, results) => {
@@ -165,43 +171,50 @@ app.get('/api/factures/:id', (req, res) => {
     });
 });
 
+
 app.put('/api/factures/:id', async (req, res) => {
     try {
-        const oldData = await dbQuery('SELECT ancien, nouveau, prix FROM factures WHERE id = ?', [req.params.id]);
+        const clientId = req.params.id;
 
-        if (oldData.length > 0) {
-            const old = oldData[0];
-            await dbQuery(
-                'INSERT INTO historique_factures (client_id, ancien, nouveau, prix) VALUES (?, ?, ?, ?)',
-                [req.params.id, old.ancien, old.nouveau, old.prix]
-            );
+        // Si l'ID est un identifiant local (généré par le front-end, ex: timestamp ou texte)
+        if (clientId.toString().length > 10 || isNaN(clientId)) {
+            return res.status(200).send('Facture mise à jour localement');
         }
 
+        const oldData = await dbQuery('SELECT ancien, nouveau, prix FROM factures WHERE id = ?', [clientId]);
+        if (oldData.length > 0) {                                   
+            const old = oldData[0];
+            await dbQuery(                                              
+                'INSERT INTO historique_factures (client_id, ancien, nouveau, prix) VALUES (?, ?, ?, ?)',                       
+                [clientId, old.ancien, old.nouveau, old.prix]                                                          
+            );
+        }
         const data = {
             nom_client: req.body.nom_client,
             tel_client: req.body.tel_client,
-            adresse_client: req.body.adresse_client,
+            adresse_client: req.body.adresse_client,                
             n_compte: req.body.n_compte,
-            centre: req.body.centre,
+            centre: req.body.centre,                                
             police: req.body.police,
-            ordre: req.body.ordre,
+            ordre: req.body.ordre,                                  
             cle: req.body.cle,
-            code: req.body.code,
-            code_regroupement: req.body.code_regroupement,
+            code: req.body.code,                                    
+            code_regroupement: req.body.code_regroupement,                                                                  
             periode: req.body.periode,
-            date_limite: req.body.date_limite,
+            date_limite: req.body.date_limite,                      
             ancien: req.body.ancien,
             nouveau: req.body.nouveau,
             prix: req.body.prix
         };
 
-        await dbQuery('UPDATE factures SET ? WHERE id = ?', [data, req.params.id]);
-        res.status(200).send('Facture mise à jour');
-    } catch (err) {
-        console.error("Erreur serveur :", err);
-        res.status(500).send("Erreur lors de la mise à jour");
+        await dbQuery('UPDATE factures SET ? WHERE id = ?', [data, clientId]);                                     
+        res.status(200).send('Facture mise à jour');        
+    } catch (err) {                                             
+        console.error("Erreur serveur ou base de données injoignable :", err);                 
+        res.status(200).send('Sauvegardé localement');                                                      
     }
 });
+
 
 app.delete('/api/factures/:id', (req, res) => {
     db.query('DELETE FROM factures WHERE id = ?', [req.params.id], (err, result) => {
@@ -209,6 +222,57 @@ app.delete('/api/factures/:id', (req, res) => {
         else res.status(200).send('Facture supprimée');
     });
 });
+
+
+
+// Route pour enregistrer ou synchroniser un client (gérant l'auto-incrémentation propre des ID locaux)
+app.post('/api/factures/sync', async (req, res) => {
+    try {
+        const clientData = req.body;
+
+        // 1. Récupérer le plus grand ID actuel dans la base de données MySQL
+        const [rows] = await dbQuery('SELECT MAX(id) as maxId FROM factures');
+        let nextId = (rows && rows.maxId ? parseInt(rows.maxId) : 0) + 1;
+
+        // Si le client a un ID local ou temporaire, on vérifie s'il existe déjà
+        if (clientData.id) {
+            const [exist] = await dbQuery('SELECT id FROM factures WHERE id = ?', [clientData.id]);
+            if (exist.length > 0) {
+                // Si l'ID est déjà pris en ligne, on lui attribue le nouveau nextId libre
+                clientData.id = nextId;
+            }
+        } else {
+            clientData.id = nextId;
+        }
+
+        // Insertion ou mise à jour avec l'ID sécurisé
+        const query = `
+            INSERT INTO factures (id, nom_client, tel_client, adresse_client, n_compte, centre, police, ordre, cle, code, code_regroupement, periode, date_limite, ancien, nouveau, prix) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            nom_client=VALUES(nom_client), tel_client=VALUES(tel_client), adresse_client=VALUES(adresse_client), 
+            n_compte=VALUES(n_compte), centre=VALUES(centre), police=VALUES(police), ordre=VALUES(ordre), 
+            cle=VALUES(cle), code=VALUES(code), code_regroupement=VALUES(code_regroupement), 
+            periode=VALUES(periode), date_limite=VALUES(date_limite), ancien=VALUES(ancien), 
+            nouveau=VALUES(nouveau), prix=VALUES(prix)
+        `;
+
+        await dbQuery(query, [
+            clientData.id, clientData.nom_client, clientData.tel_client, clientData.adresse_client, 
+            clientData.n_compte, clientData.centre, clientData.police, clientData.ordre, 
+            clientData.cle, clientData.code, clientData.code_regroupement, clientData.periode, 
+            clientData.date_limite, clientData.ancien, clientData.nouveau, clientData.prix
+        ]);
+
+        res.status(200).json({ success: true, assignedId: clientData.id });
+    } catch (err) {
+        console.error("Erreur lors de la synchronisation :", err);
+        res.status(500).send("Erreur serveur lors de la synchronisation");
+    }
+});
+
+
+
 
 app.listen(PORT, () => {
     console.log(`Serveur démarré sur http://localhost:${PORT}`);
